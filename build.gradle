@@ -1,0 +1,85 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.herbet'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //selenium web driver
+    //https://www.selenium.dev/documentation/webdriver/getting_started/install_library/
+    testImplementation 'org.seleniumhq.selenium:selenium-java:4.20.0'
+
+    //https://bonigarcia.dev/webdrivermanager/#setup
+    testImplementation("io.github.bonigarcia:webdrivermanager:5.8.0")
+
+    //junit
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
+    testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.24.0'
+
+
+    //cucumber
+    implementation group: 'io.cucumber', name: 'cucumber-java', version: '7.12.0'
+    testImplementation group: 'io.cucumber', name: 'cucumber-junit', version: '7.12.0'
+}
+
+/*
+MENJALANKAN  "class WebRunner"
+
+bagian ini di uncoment dlu
+test {
+    useJUnitPlatform()
+}
+
+kalau mau nge run di terminal memakai ./gradlew test
+atau kalo mau lebih jelas ./gradlew test --info
+ */
+
+
+
+
+/*
+CUSTOM GRADLEW TASK
+
+// ./gradlew cucumber -> menjalankan
+// ./gradlew cucumber -Ptags="@valid-login" -> menjalankan single tags
+// ./gradlew cucumber -Ptags="@invalid-login" -> menjalankan single tags
+*/
+
+
+//test {
+//    useJUnitPlatform()
+//    systemProperty ("cucumber.filter.tags",System.getProperty("cucumber.filter.tags"))
+//}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+def tags = (findProperty('tags') == null) ? 'not @exclude' : findProperty('tags') + ' and not @exclude'
+
+task cucumber() {
+    description("Running Cucumber Test")
+    dependsOn assemble, compileTestJava
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = [
+                    '--plugin', 'html:reports/index.html',
+                    '--plugin', 'pretty',
+                    '--glue', 'stepdef',
+                    '--tags', "${tags}",
+                    'src/test/java'
+            ]
+        }
+    }
+}
+
